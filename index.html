@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casino Virtual</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #1a1a1a;
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .casino {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #2d2d2d;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+        }
+
+        .balance {
+            font-size: 24px;
+            color: gold;
+            margin: 10px 0;
+        }
+
+        .slot-machine {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            padding: 20px;
+            background: #2d2d2d;
+            border-radius: 10px;
+        }
+
+        .reel {
+            width: 100px;
+            height: 100px;
+            background: #1a1a1a;
+            border: 2px solid gold;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            background: gold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background: #ffd700;
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .bet-amount {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .bet-amount input {
+            padding: 10px;
+            font-size: 18px;
+            width: 100px;
+            border: 2px solid gold;
+            background: #1a1a1a;
+            color: white;
+            border-radius: 5px;
+        }
+
+        .message {
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 20px;
+        }
+
+        .win {
+            background: rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+        }
+
+        .lose {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff0000;
+        }
+
+        .history {
+            margin-top: 30px;
+            padding: 20px;
+            background: #2d2d2d;
+            border-radius: 10px;
+        }
+
+        .history h2 {
+            margin-bottom: 10px;
+        }
+
+        .history-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+    <div class="casino">
+        <div class="header">
+            <h1>🎰 Casino Virtual 🎰</h1>
+            <div class="balance" id="balance">Saldo: $1000</div>
+        </div>
+
+        <div class="bet-amount">
+            <label for="bet">Apuesta: $</label>
+            <input type="number" id="bet" min="1" max="100" value="10">
+        </div>
+
+        <div class="slot-machine">
+            <div class="reel" id="reel1">🎲</div>
+            <div class="reel" id="reel2">🎲</div>
+            <div class="reel" id="reel3">🎲</div>
+        </div>
+
+        <div class="controls">
+            <button id="spinButton" onclick="spin()">Girar</button>
+        </div>
+
+        <div class="message" id="message"></div>
+
+        <div class="history">
+            <h2>Historial de Jugadas</h2>
+            <div class="history-list" id="history"></div>
+        </div>
+    </div>
+
+    <script>
+        let balance = 1000;
+        const symbols = ['🎲', '💎', '7️⃣', '🍒', '⭐', '🎰'];
+        let isSpinning = false;
+
+        function updateBalance(amount) {
+            balance += amount;
+            document.getElementById('balance').textContent = `Saldo: $${balance}`;
+        }
+
+        function getRandomSymbol() {
+            return symbols[Math.floor(Math.random() * symbols.length)];
+        }
+
+        function addToHistory(result, bet, winnings) {
+            const historyDiv = document.getElementById('history');
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            historyItem.innerHTML = `
+                <span>${result}</span>
+                <span>Apuesta: $${bet} | ${winnings >= 0 ? `Ganancia: $${winnings}` : `Pérdida: $${-winnings}`}</span>
+            `;
+            historyDiv.insertBefore(historyItem, historyDiv.firstChild);
+        }
+
+        function calculateWinnings(symbols, bet) {
+            if (symbols[0] === symbols[1] && symbols[1] === symbols[2]) {
+                // Triple coincidencia
+                return bet * 10;
+            } else if (symbols[0] === symbols[1] || symbols[1] === symbols[2] || symbols[0] === symbols[2]) {
+                // Doble coincidencia
+                return bet * 2;
+            }
+            return 0;
+        }
+
+        function spin() {
+            if (isSpinning) return;
+
+            const betAmount = parseInt(document.getElementById('bet').value);
+            if (isNaN(betAmount) || betAmount < 1 || betAmount > 100) {
+                alert('Por favor ingresa una apuesta válida entre 1 y 100');
+                return;
+            }
+
+            if (betAmount > balance) {
+                alert('No tienes suficiente saldo para esta apuesta');
+                return;
+            }
+
+            isSpinning = true;
+            document.getElementById('spinButton').disabled = true;
+            updateBalance(-betAmount);
+
+            const reels = [
+                document.getElementById('reel1'),
+                document.getElementById('reel2'),
+                document.getElementById('reel3')
+            ];
+
+            let spins = 0;
+            const finalSymbols = [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()];
+
+            const spinInterval = setInterval(() => {
+                reels.forEach((reel, i) => {
+                    reel.textContent = getRandomSymbol();
+                });
+
+                spins++;
+                if (spins >= 20) {
+                    clearInterval(spinInterval);
+                    reels.forEach((reel, i) => {
+                        reel.textContent = finalSymbols[i];
+                    });
+
+                    const winnings = calculateWinnings(finalSymbols, betAmount);
+                    const messageDiv = document.getElementById('message');
+                    
+                    if (winnings > 0) {
+                        messageDiv.textContent = `¡Felicitaciones! Ganaste $${winnings}`;
+                        messageDiv.className = 'message win';
+                        updateBalance(winnings);
+                    } else {
+                        messageDiv.textContent = '¡Inténtalo de nuevo!';
+                        messageDiv.className = 'message lose';
+                    }
+
+                    addToHistory(finalSymbols.join(' '), betAmount, winnings - betAmount);
+                    isSpinning = false;
+                    document.getElementById('spinButton').disabled = false;
+                }
+            }, 50);
+        }
+    </script>
+</body>
+</html>
